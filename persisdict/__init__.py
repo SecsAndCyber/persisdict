@@ -1,0 +1,1 @@
+from .persisdict import pdict
