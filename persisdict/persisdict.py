@@ -80,11 +80,14 @@ class pdict(object):
         try:
             _ = json.loads(json_blob)
             _['modifed'] = datetime.datetime.strptime(_['modifed'], "%Y-%m-%dT%H:%M:%S.%f")
-            return _
         except ValueError as ve:
-            raise KeyError("Data corruption in entry for key {}".format(key))
+            try: 
+                _['modifed'] = datetime.datetime.strptime(_['modifed'], "%Y-%m-%dT%H:%M:%S")
+            except ValueError as ve:
+                raise KeyError("Data corruption in entry for key {} {}".format(key, ve))
         except KeyError as ke:
             raise KeyError("Value corruption in entry for key {}".format(key))
+        return _
             
     def __setitem__(self, key, item):
         update_time = datetime.datetime.utcnow()
