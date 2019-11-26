@@ -25,6 +25,7 @@ class pdict(object):
     def __init__(self, filepath=None, tablename=None):
         if filepath: self.CACHE_FILE=filepath
         if tablename: self.CacheName=tablename
+        self.cache_dict = {}
         
         self.conn = sqlite3.connect(self.CACHE_FILE, detect_types=sqlite3.PARSE_DECLTYPES)
         self.cursor = self.conn.cursor()
@@ -33,7 +34,6 @@ class pdict(object):
                      (json_blob text, key text PRIMARY KEY, created timestamp, modifed timestamp)'''.format(self.CacheName))
         # Save (commit) the changes
         self.conn.commit()
-        self.cache_dict = {}
         self._keys = set()
         
     def __len__(self):
@@ -46,14 +46,19 @@ class pdict(object):
     def keys(self):
         if self._keys:
             return sorted(list(self._keys))
-        self.cursor.execute("SELECT key from {}".format(self.CacheName), [])
+        self.cursor.execute("SELECT DISTINCT key from {}".format(self.CacheName), [])
         all_rows = self.cursor.fetchall()
         for row in all_rows:
             _key, = row
+            # if not _key:
+                # logging.error("Invalid key found! - {}".format(row))
+                # continue
             self._keys.add(_key)
         return sorted(list(self._keys))
         
     def __contains__(self, key):
+        if key is None:
+            raise KeyError("None key used")
         return key in self.keys()
         
     def __iter__(self):
@@ -61,6 +66,8 @@ class pdict(object):
             yield k
             
     def _update_db(self, key, item, update_time):
+        if key is None:
+            raise KeyError("None key used")
         self.cache_dict[key]['value'] = item
         self.cache_dict[key]['modifed'] = update_time
         self.cursor.execute("UPDATE {} SET json_blob=?,modifed=? WHERE key = ?".format(self.CacheName),
@@ -68,6 +75,8 @@ class pdict(object):
         self.conn.commit()
     
     def _update_from_db(self, key):
+        if key is None:
+            raise KeyError("None key used")
         self.cursor.execute("SELECT json_blob from {} WHERE key=?".format(self.CacheName), [key])
         all_rows = self.cursor.fetchall()
         if not all_rows:
@@ -90,6 +99,8 @@ class pdict(object):
         return _
             
     def __setitem__(self, key, item):
+        if key is None:
+            raise KeyError("None key used")
         update_time = datetime.datetime.utcnow()
         if not None == self.get(key, None):
             self._update_db(key, item, update_time)
@@ -105,6 +116,8 @@ class pdict(object):
             self._keys.add(key)
         
     def __getitem__(self, key):
+        if key is None:
+            raise KeyError("None key used")
         if key in self.cache_dict:
             # flush cache to backing if it is mutable
             try:
@@ -130,6 +143,8 @@ class pdict(object):
             raise KeyError("Value corruption in entry for key {}".format(key))
             
     def pop(self, key, default=None):
+        if key is None:
+            raise KeyError("None key used")
         if not key in self.cache_dict:
             if default: return default
             raise KeyError(key)
@@ -143,6 +158,8 @@ class pdict(object):
         return _value_dict['value']
                
     def get(self, key, default=None):
+        if key is None:
+            raise KeyError("None key used")
         try:
             return self[key]
         except KeyError:
