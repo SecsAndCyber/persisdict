@@ -6,6 +6,7 @@ from __future__ import print_function
 import argparse, sys, os, logging, datetime
 import sqlite3, json
 
+log = logging.getLogger('persisdict')
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -25,6 +26,10 @@ class pdict(object):
         return self
 
     def __exit__(self, type, value, tb):
+        for key in self.cache_dict:
+            self[key]
+        self.cache_dict = {}
+            
         if self.conn:
             if self.cursor:
                 self.cursor.close()
