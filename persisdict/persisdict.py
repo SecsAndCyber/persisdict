@@ -1,4 +1,3 @@
-#! /usr/bin/env python
 """
    Author: Matthew Molyett
    Created: Fri Jan 19 09:55:49 EST 2018
@@ -22,13 +21,24 @@ class pdict(object):
     CacheName = "magic_json"
     CACHE_FILE = os.path.join(CUR_DIR, 'json_state.db')    
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        if self.conn:
+            if self.cursor:
+                self.cursor.close()
+            self.conn.close()
+        
     def __init__(self, filepath=None, tablename=None):
         if filepath: self.CACHE_FILE=filepath
         if tablename: self.CacheName=tablename
         self.cache_dict = {}
+        self.conn, self.cursor = None, None
         
         self.conn = sqlite3.connect(self.CACHE_FILE, detect_types=sqlite3.PARSE_DECLTYPES)
         self.cursor = self.conn.cursor()
+        
         # Create table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS {}
                      (json_blob text, key text PRIMARY KEY, created timestamp, modifed timestamp)'''.format(self.CacheName))
